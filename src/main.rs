@@ -113,7 +113,11 @@ fn get_minimal_type(name:&str,values:&[&str])->EntityPropertyType{
 	if values.iter().all(|&v|<f32 as EntityProp>::parse(v).is_ok()){
 		return EntityPropertyType::F32;
 	}
-	if name.find("color").is_some()&&values.iter().all(|&v|<Color as EntityProp>::parse(v).is_ok()){
+	if (
+		name.find("color").is_some()
+		||name.find("light").is_some()
+		||name.find("ambient").is_some()
+	)&&values.iter().all(|&v|<Color as EntityProp>::parse(v).is_ok()){
 		return EntityPropertyType::Color;
 	}
 	if values.iter().all(|&v|<LightColor as EntityProp>::parse(v).is_ok()){
