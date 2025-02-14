@@ -302,27 +302,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		let ty=format!("Str{}Static{id}",value.to_upper_camel_case());
 		let ident=syn::Ident::new(&ty,proc_macro2::Span::call_site());
 		syn::parse_quote!{
-			#[derive(Debug,Clone)]
-			pub struct #ident;
-			impl #ident{
-				pub const STR:&'static str=#value;
-			}
-			impl Deref for #ident{
-				type Target=str;
-				fn deref(&self)->&'static str{
-					Self::STR
-				}
-			}
-			impl<'de> Deserialize<'de> for #ident{
-				fn deserialize<D:Deserializer<'de>>(deserializer:D)->Result<Self,D::Error>{
-					let s=<&str>::deserialize(deserializer)?;
-					if s==Self::STR{
-						Ok(Self)
-					}else{
-						Err(D::Error::invalid_value(Unexpected::Str(s),&Self::STR))
-					}
-				}
-			}
+			static_str!(#ident,#value);
 		}
 	}).collect();
 
