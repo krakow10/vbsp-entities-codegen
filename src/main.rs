@@ -187,7 +187,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	let mut classes=std::collections::HashMap::new();
 	for bsp in &bsps{
 		for ent in bsp.entities.iter(){
-			if let Ok(class)=ent.prop("classname"){
+			if let Some(class)=ent.prop("classname"){
 				let props=classes.entry(class).or_insert(ClassCollector{occurances:0,values:HashMap::new()});
 				props.occurances+=1;
 				for (name,value) in ent.properties(){
