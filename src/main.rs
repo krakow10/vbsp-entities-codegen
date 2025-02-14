@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashSet,HashMap};
 use std::io::Write;
 use std::path::PathBuf;
 
+use heck::ToUpperCamelCase;
 use quote::ToTokens;
 use vbsp::EntityProp;
 
@@ -139,7 +140,7 @@ fn get_minimal_type(name:&str,values:&[&str])->EntityPropertyType{
 }
 
 struct ClassCollector<'a>{
-	occurances:usize,
+	occurrences:usize,
 	values:HashMap<&'a str,Vec<&'a str>>
 }
 
@@ -188,8 +189,8 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	for bsp in &bsps{
 		for ent in bsp.entities.iter(){
 			if let Some(class)=ent.prop("classname"){
-				let props=classes.entry(class).or_insert(ClassCollector{occurances:0,values:HashMap::new()});
-				props.occurances+=1;
+				let props=classes.entry(class).or_insert(ClassCollector{occurrences:0,values:HashMap::new()});
+				props.occurrences+=1;
 				for (name,value) in ent.properties(){
 					if matches!(name,"classname"|"hammerid"){
 						continue;
@@ -219,24 +220,44 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	// generate a struct for each entity
 	let mut entity_structs=Vec::new();
 	let mut entity_variants=Vec::new();
+	let mut unique_str=HashMap::new();
 	for (classname,properties) in classes{
 		let mut has_lifetime=false;
 		let mut props=Vec::new();
 		for (propname,values) in properties.values{
 			// exhaustively make sure all observed values can be parsed by the chosen type
 			let ty=get_minimal_type(propname,&values);
+			// this is an optional type and should have a default value
+			let optional=values.len()<properties.occurrences;
+			if !optional&&1<properties.occurrences{
+				let unique_values=values.into_iter().collect::<HashSet<_>>();
+				if unique_values.len()==1{
+					let value=unique_values.into_iter().next().unwrap();
+					let next_id=unique_str.len();
+					let id=unique_str.entry(value).or_insert(next_id);
+					let ty=format!("Str{}Static{id}",value.to_upper_camel_case());
+					// Unit structs that implement Deserialize and Deref into the respective &'static str
+					props.push(syn::Field{
+						attrs:vec![],
+						vis:syn::Visibility::Public(syn::token::Pub::default()),
+						mutability:syn::FieldMutability::None,
+						ident:Some(syn::Ident::new(propname,proc_macro2::Span::call_site())),
+						colon_token:Some(syn::token::Colon::default()),
+						ty:syn::Type::Path(syn::TypePath{qself:None,path:syn::Path{leading_colon:None,segments:[syn::PathSegment{ident:syn::Ident::new(&ty,proc_macro2::Span::call_site()),arguments:syn::PathArguments::None}].into_iter().collect()}}),
+					});
+					continue;
+				}
+			}
 			if matches!(ty,EntityPropertyType::Str){
 				has_lifetime=true;
 			}
-			// this is an optional type and should have a default value
-			let optional=values.len()<properties.occurances;
 			props.push(ty.codegen(propname,optional));
 		}
 		// sort props for consistency
 		props.sort_by(|a,b|a.ident.cmp(&b.ident));
 
 		// struct ident in UpperCamelCase
-		let ident=syn::Ident::new(&heck::ToUpperCamelCase::to_upper_camel_case(classname),proc_macro2::Span::call_site());
+		let ident=syn::Ident::new(&classname.to_upper_camel_case(),proc_macro2::Span::call_site());
 
 		// generate the class struct with all observed fields
 		entity_structs.push(syn::ItemStruct{
@@ -274,6 +295,37 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		});
 	}
 
+	// generate unit structs for constants
+	let mut str_list:Vec<_>=unique_str.into_iter().collect();
+	str_list.sort();
+	let constants:Vec<syn::File>=str_list.into_iter().map(|(value,id)|{
+		let ty=format!("Str{}Static{id}",value.to_upper_camel_case());
+		let ident=syn::Ident::new(&ty,proc_macro2::Span::call_site());
+		syn::parse_quote!{
+			#[derive(Debug,Clone)]
+			pub struct #ident;
+			impl #ident{
+				pub const STR:&'static str=#value;
+			}
+			impl Deref for #ident{
+				type Target=str;
+				fn deref(&self)->&'static str{
+					Self::STR
+				}
+			}
+			impl<'de> Deserialize<'de> for #ident{
+				fn deserialize<D:Deserializer<'de>>(deserializer:D)->Result<Self,D::Error>{
+					let s=<&str>::deserialize(deserializer)?;
+					if s==Self::STR{
+						Ok(Self)
+					}else{
+						Err(D::Error::invalid_value(Unexpected::Str(s),&Self::STR))
+					}
+				}
+			}
+		}
+	}).collect();
+
 	// sort entities for consistency
 	entity_structs.sort_by(|a,b|a.ident.cmp(&b.ident));
 	entity_variants.sort_by(|a,b|a.ident.cmp(&b.ident));
@@ -285,6 +337,10 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	// save to codegen.rs
 	let mut file=std::fs::File::create("codegen.rs").map_err(BspEntitiesError::Io)?;
 	file.write(entities_enum.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
+
+	for constant in constants{
+		file.write(constant.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
+	}
 
 	for entity_struct in entity_structs{
 		file.write(entity_struct.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
