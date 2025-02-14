@@ -294,8 +294,8 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	Ok(())
 }
 
-// auxilliary function so sort existing structs
-fn sort(){
+// auxilliary function to sort existing structs
+fn sort_structs(){
 	let mut file:syn::File=syn::parse_quote!{
 		// PASTE STRUCTS HERE TO SORT THEM
 	};
@@ -317,4 +317,17 @@ fn sort(){
 	});
 
 	println!("{}",file.into_token_stream().to_string());
+}
+
+// auxilliary function to sort existing enum variants
+fn sort_enum(){
+	let mut entities_enum:syn::ItemEnum=syn::parse_quote!{
+		// PASTE ENUM HERE TO SORT VARIANTS
+	};
+
+	let mut variants:Vec<_>=entities_enum.variants.iter().cloned().collect();
+	variants.sort_by(|a,b|a.ident.cmp(&b.ident));
+	entities_enum.variants=variants.into_iter().collect();
+
+	println!("{}",entities_enum.into_token_stream().to_string());
 }
