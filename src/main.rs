@@ -194,6 +194,10 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 					if matches!(name,"classname"|"hammerid"){
 						continue;
 					}
+					if name==""{
+						println!("empty ident! class={class} value={value}");
+						continue;
+					}
 					let values=props.values.entry(name).or_insert(Vec::new());
 					// observed value string
 					values.push(value);
