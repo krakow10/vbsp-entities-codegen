@@ -6,6 +6,11 @@ use vbsp::EntityProp;
 
 use vbsp::{Angles,Color,LightColor,Vector};
 
+fn main() {
+	let paths=std::env::args().map(PathBuf::from).collect();
+	bsp_entities(paths).unwrap();
+}
+
 #[derive(Debug)]
 enum ReadBspError{
 	Io(std::io::Error),
@@ -279,11 +284,6 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	println!("failed_count={failed_count}");
 	println!("elapsed={:?}",elapsed);
 	Ok(())
-}
-
-fn main() {
-	let paths=std::env::args().map(PathBuf::from).collect();
-	bsp_entities(paths).unwrap();
 }
 
 fn sort(){
