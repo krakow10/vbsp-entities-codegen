@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::Write;
 use std::path::PathBuf;
 
 use quote::ToTokens;
@@ -277,10 +278,12 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	let elapsed=start.elapsed();
 
 	// print that sucker out
-	println!("{}",entities_enum.into_token_stream().to_string());
+	// save to codegen.rs
+	let mut file=std::fs::File::create("codegen.rs").map_err(BspEntitiesError::Io)?;
+	file.write(entities_enum.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
 
 	for entity_struct in entity_structs{
-		println!("{}",entity_struct.into_token_stream().to_string());
+		file.write(entity_struct.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
 	}
 
 	println!("elapsed={:?}",elapsed);
