@@ -183,16 +183,9 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	};
 
 	// collect observed class instances
-	let mut failed_count=0;
 	let mut classes=std::collections::HashMap::new();
 	for bsp in &bsps{
 		for ent in bsp.entities.iter(){
-			let (ent,_err)=match ent.parse(){
-				Ok(vbsp::EntityVersion::Unknown(ent))=>(ent,None),
-				Err(err)=>(ent,Some(err)),
-				_=>continue,
-			};
-			failed_count+=1;
 			if let Ok(class)=ent.prop("classname"){
 				let props=classes.entry(class).or_insert(ClassCollector{occurances:0,values:HashMap::new()});
 				props.occurances+=1;
@@ -290,7 +283,6 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		println!("{}",entity_struct.into_token_stream().to_string());
 	}
 
-	println!("failed_count={failed_count}");
 	println!("elapsed={:?}",elapsed);
 	Ok(())
 }
