@@ -139,7 +139,7 @@ fn get_minimal_type(name:&str,values:&[&str])->EntityPropertyType{
 }
 
 struct ClassCollector<'a>{
-	occurances:usize,
+	occurrences:usize,
 	values:HashMap<&'a str,Vec<&'a str>>
 }
 
@@ -188,8 +188,8 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	for bsp in &bsps{
 		for ent in bsp.entities.iter(){
 			if let Some(class)=ent.prop("classname"){
-				let props=classes.entry(class).or_insert(ClassCollector{occurances:0,values:HashMap::new()});
-				props.occurances+=1;
+				let props=classes.entry(class).or_insert(ClassCollector{occurrences:0,values:HashMap::new()});
+				props.occurrences+=1;
 				for (name,value) in ent.properties(){
 					if matches!(name,"classname"|"hammerid"){
 						continue;
@@ -229,7 +229,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 				has_lifetime=true;
 			}
 			// this is an optional type and should have a default value
-			let optional=values.len()<properties.occurances;
+			let optional=values.len()<properties.occurrences;
 			props.push(ty.codegen(propname,optional));
 		}
 		// sort props for consistency
