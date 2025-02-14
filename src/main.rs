@@ -1,3 +1,11 @@
+use std::collections::HashMap;
+use std::path::PathBuf;
+
+use quote::ToTokens;
+use vbsp::EntityProp;
+
+use vbsp::{Color,LightColor,Vector};
+
 #[derive(Debug)]
 enum ReadBspError{
 	Io(std::io::Error),
@@ -72,14 +80,6 @@ impl EntityPropertyType{
 		}
 	}
 }
-
-use std::collections::HashMap;
-use std::path::PathBuf;
-
-use quote::ToTokens;
-use vbsp::EntityProp;
-
-use vbsp::{Color,LightColor,Vector};
 
 fn get_bool(value:&str)->Option<bool>{
 	match value{
