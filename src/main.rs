@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use quote::ToTokens;
 use vbsp::EntityProp;
 
-use vbsp::{Color,LightColor,Vector};
+use vbsp::{Angles,Color,LightColor,Vector};
 
 #[derive(Debug)]
 enum ReadBspError{
@@ -119,11 +119,11 @@ fn get_minimal_type(name:&str,values:&[&str])->EntityPropertyType{
 	if values.iter().all(|&v|<LightColor as EntityProp>::parse(v).is_ok()){
 		return EntityPropertyType::LightColor;
 	}
+	if name.find("angles").is_some()&&values.iter().all(|&v|<Angles as EntityProp>::parse(v).is_ok()){
+		return EntityPropertyType::Angles;
+	}
 	if values.iter().all(|&v|<Vector as EntityProp>::parse(v).is_ok()){
-		return match name{
-			"angles"=>EntityPropertyType::Angles,
-			_=>EntityPropertyType::Vector,
-		};
+		return EntityPropertyType::Vector;
 	}
 	EntityPropertyType::Str
 }
