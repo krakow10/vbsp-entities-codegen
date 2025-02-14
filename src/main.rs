@@ -95,6 +95,9 @@ fn get_bool(value:&str)->Option<bool>{
 	}
 }
 fn get_minimal_type(name:&str,values:&[&str])->EntityPropertyType{
+	if name=="spawnflags"&&values.iter().all(|&v|<u32 as EntityProp>::parse(v).is_ok()){
+		return EntityPropertyType::U32;
+	}
 	if values.iter().all(|&v|get_bool(v).is_some()){
 		return EntityPropertyType::Bool;
 	}
