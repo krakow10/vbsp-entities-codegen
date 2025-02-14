@@ -151,6 +151,7 @@ enum BspEntitiesError{
 fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	let start=std::time::Instant::now();
 
+	// decode bsps in parallel using available_parallelism
 	let bsps={
 		let mut bsps=Vec::with_capacity(paths.len());
 
@@ -181,6 +182,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		bsps
 	};
 
+	// collect observed class instances
 	let mut failed_count=0;
 	let mut classes=std::collections::HashMap::new();
 	for bsp in &bsps{
@@ -199,6 +201,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 						continue;
 					}
 					let values=props.values.entry(name).or_insert(Vec::new());
+					// observed value string
 					values.push(value);
 				}
 			}else{
@@ -233,7 +236,11 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		}
 		// sort props for consistency
 		props.sort_by(|a,b|a.ident.cmp(&b.ident));
+
+		// struct ident in UpperCamelCase
 		let ident=syn::Ident::new(&heck::ToUpperCamelCase::to_upper_camel_case(classname),proc_macro2::Span::call_site());
+
+		// generate the class struct with all observed fields
 		entity_structs.push(syn::ItemStruct{
 			attrs:vec![syn::parse_quote!(#[derive(Debug, Clone, Deserialize)])],
 			vis:syn::Visibility::Public(syn::token::Pub::default()),
@@ -243,6 +250,8 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 			fields:syn::Fields::Named(syn::FieldsNamed{brace_token:syn::token::Brace::default(),named:props.into_iter().collect()}),
 			semi_token:None,
 		});
+
+		// generate Entities enum variant
 		let arguments=if has_lifetime{
 			syn::PathArguments::AngleBracketed(syn::parse_quote!(<'a>))
 		}else{
@@ -286,6 +295,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	Ok(())
 }
 
+// auxilliary function so sort existing structs
 fn sort(){
 	let mut file:syn::File=syn::parse_quote!{
 		// PASTE STRUCTS HERE TO SORT THEM
