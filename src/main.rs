@@ -95,19 +95,16 @@ fn get_bool(value:&str)->Option<bool>{
 	}
 }
 fn get_minimal_type(name:&str,values:&[&str])->EntityPropertyType{
-	if name=="spawnflags"&&values.iter().all(|&v|<u32 as EntityProp>::parse(v).is_ok()){
-		return EntityPropertyType::U32;
-	}
-	if values.iter().all(|&v|get_bool(v).is_some()){
+	if !matches!(name,"spawnflags"|"ammo")&&values.iter().all(|&v|get_bool(v).is_some()){
 		return EntityPropertyType::Bool;
 	}
-	if values.iter().all(|&v|<u8 as EntityProp>::parse(v).is_ok()){
+	if !matches!(name,"spawnflags"|"ammo")&&values.iter().all(|&v|<u8 as EntityProp>::parse(v).is_ok()){
 		return EntityPropertyType::U8;
 	}
 	// if values.iter().all(|&v|<i8 as EntityProp>::parse(v).is_ok()){
 	// 	return EntityPropertyType::I8;
 	// }
-	if values.iter().all(|&v|<u16 as EntityProp>::parse(v).is_ok()){
+	if name!="spawnflags"&&values.iter().all(|&v|<u16 as EntityProp>::parse(v).is_ok()){
 		return EntityPropertyType::U16;
 	}
 	// if values.iter().all(|&v|<i16 as EntityProp>::parse(v).is_ok()){
