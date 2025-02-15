@@ -155,7 +155,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	let start=std::time::Instant::now();
 
 	// decode bsps in parallel using available_parallelism
-	let bsps={
+	let bsps_entities={
 		let mut bsps=Vec::with_capacity(paths.len());
 
 		let thread_limit=std::thread::available_parallelism().map_err(BspEntitiesError::Io)?.get();
@@ -163,7 +163,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		type Thread=std::thread::JoinHandle<Result<vbsp::Bsp,ReadBspError>>;
 		let mut join_thread=|thread:Thread|{
 			match thread.join(){
-				Ok(Ok(bsp))=>Ok(bsps.push(bsp)),
+				Ok(Ok(bsp))=>Ok(bsps.push(bsp.entities)),
 				Ok(Err(e))=>Ok(println!("ReadBsp error: {:?}",e)),
 				Err(e)=>Err(e),
 			}
@@ -185,14 +185,14 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		// save 2kB of memory :scream:
 		bsps.into_boxed_slice()
 	};
-	println!("bsps decoded={} elapsed={:?}",bsps.len(),start.elapsed());
+	println!("bsps decoded={} elapsed={:?}",bsps_entities.len(),start.elapsed());
 
 	let start_convert=std::time::Instant::now();
 
 	// collect observed class instances
 	let mut classes=std::collections::HashMap::new();
-	for bsp in &bsps{
-		for ent in &bsp.entities{
+	for entities in &bsps_entities{
+		for ent in entities{
 			if let Some(class)=ent.prop("classname"){
 				if class==""{
 					println!("empty class ident! class={class}");
