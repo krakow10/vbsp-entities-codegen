@@ -186,7 +186,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	// collect observed class instances
 	let mut classes=std::collections::HashMap::new();
 	for bsp in &bsps{
-		for ent in bsp.entities.iter(){
+		for ent in &bsp.entities{
 			if let Some(class)=ent.prop("classname"){
 				let props=classes.entry(class).or_insert(ClassCollector{occurrences:0,values:HashMap::new()});
 				props.occurrences+=1;
