@@ -8,4 +8,4 @@ heck = "0.5.0"
 proc-macro2 = "1.0.93"
 quote = "1.0.38"
 syn = { version = "2.0.98", features = ["full", "parsing"] }
-vbsp = { git = "https://github.com/icewind1991/vbsp", rev = "6e3999fad30d60137cb474c7ef1168cdc7cc986e" }
+vbsp = { git = "https://github.com/krakow10/vbsp", rev = "778dc52689ce709fc20d326330fe4733b2322377" }
