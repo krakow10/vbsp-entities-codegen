@@ -185,6 +185,9 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		// save 2kB of memory :scream:
 		bsps.into_boxed_slice()
 	};
+	println!("bsps decoded={} elapsed={:?}",bsps.len(),start.elapsed());
+
+	let start_convert=std::time::Instant::now();
 
 	// collect observed class instances
 	let mut classes=std::collections::HashMap::new();
@@ -284,6 +287,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	entities_enum.variants.extend(entity_variants);
 
 	// time!
+	let convert_elapsed=start_convert.elapsed();
 	let elapsed=start.elapsed();
 
 	// print that sucker out
@@ -295,7 +299,8 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		file.write(entity_struct.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
 	}
 
-	println!("elapsed={:?}",elapsed);
+	println!("convert elapsed={:?}",convert_elapsed);
+	println!("total elapsed={:?}",elapsed);
 	Ok(())
 }
 
