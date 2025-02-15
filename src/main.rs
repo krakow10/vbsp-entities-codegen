@@ -194,6 +194,10 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	for bsp in &bsps{
 		for ent in &bsp.entities{
 			if let Some(class)=ent.prop("classname"){
+				if class==""{
+					println!("empty class ident! class={class}");
+					continue;
+				}
 				let props=classes.entry(class).or_insert(ClassCollector{occurrences:0,values:HashMap::new()});
 				props.occurrences+=1;
 				for (name,value) in ent.properties(){
