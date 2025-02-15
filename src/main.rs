@@ -8,7 +8,7 @@ use vbsp::EntityProp;
 use vbsp::{Angles,Color,LightColor,Vector};
 
 fn main() {
-	let paths=std::env::args().map(PathBuf::from).collect();
+	let paths=std::env::args().skip(1).map(PathBuf::from).collect();
 	bsp_entities(paths).unwrap();
 }
 
