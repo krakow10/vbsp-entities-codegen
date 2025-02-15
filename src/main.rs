@@ -12,6 +12,7 @@ fn main() {
 	bsp_entities(paths).unwrap();
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 enum ReadBspError{
 	Io(std::io::Error),
@@ -143,6 +144,7 @@ struct ClassCollector<'a>{
 	values:HashMap<&'a str,Vec<&'a str>>
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 enum BspEntitiesError{
 	ReadBsp(ReadBspError),
@@ -298,7 +300,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 }
 
 // auxilliary function to sort existing structs
-fn sort_structs(){
+fn _sort_structs(){
 	let mut file:syn::File=syn::parse_quote!{
 		// PASTE STRUCTS HERE TO SORT THEM
 	};
@@ -323,7 +325,7 @@ fn sort_structs(){
 }
 
 // auxilliary function to sort existing enum variants
-fn sort_enum(){
+fn _sort_enum(){
 	let mut entities_enum:syn::ItemEnum=syn::parse_quote!{
 		// PASTE ENUM HERE TO SORT VARIANTS
 	};
