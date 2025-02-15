@@ -160,11 +160,11 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 
 		let thread_limit=std::thread::available_parallelism().map_err(BspEntitiesError::Io)?.get();
 		let mut threads=std::collections::VecDeque::with_capacity(thread_limit);
-		type Thread=std::thread::JoinHandle<Result<vbsp::Bsp,ReadBspError>>;
+		type Thread=std::thread::JoinHandle<(PathBuf,Result<vbsp::Bsp,ReadBspError>)>;
 		let mut join_thread=|thread:Thread|{
 			match thread.join(){
-				Ok(Ok(bsp))=>Ok(bsps.push(bsp.entities)),
-				Ok(Err(e))=>Ok(println!("ReadBsp error: {:?}",e)),
+				Ok((_,Ok(bsp)))=>Ok(bsps.push(bsp.entities)),
+				Ok((path,Err(e)))=>Ok(println!("File={:?} ReadBsp error: {:?}",path.file_stem(),e)),
 				Err(e)=>Err(e),
 			}
 		};
@@ -174,7 +174,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 				join_thread(threads.pop_front().unwrap()).unwrap();
 			}
 			threads.push_back(std::thread::spawn(||
-				read_bsp(path)
+				(path.clone(),read_bsp(path))
 			));
 		}
 
