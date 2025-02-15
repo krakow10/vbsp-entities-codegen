@@ -180,7 +180,8 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 			join_thread(thread).unwrap();
 		}
 
-		bsps
+		// save 2kB of memory :scream:
+		bsps.into_boxed_slice()
 	};
 
 	// collect observed class instances
