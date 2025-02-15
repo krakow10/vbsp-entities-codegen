@@ -209,14 +209,6 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		}
 	}
 
-	let mut entities_enum:syn::ItemEnum=syn::parse_quote!{
-		#[derive(Debug, Clone, Deserialize)]
-		#[non_exhaustive]
-		#[serde(tag = "classname")]
-		pub enum Entity<'a> {
-		}
-	};
-
 	// generate a struct for each entity
 	let mut entity_structs=Vec::new();
 	let mut entity_variants=Vec::new();
@@ -278,8 +270,18 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	// sort entities for consistency
 	entity_structs.sort_by(|a,b|a.ident.cmp(&b.ident));
 	entity_variants.sort_by(|a,b|a.ident.cmp(&b.ident));
+
+	// generate entities enum
+	let mut entities_enum:syn::ItemEnum=syn::parse_quote!{
+		#[derive(Debug, Clone, Deserialize)]
+		#[non_exhaustive]
+		#[serde(tag = "classname")]
+		pub enum Entity<'a> {
+		}
+	};
 	entities_enum.variants.extend(entity_variants);
 
+	// time!
 	let elapsed=start.elapsed();
 
 	// print that sucker out
