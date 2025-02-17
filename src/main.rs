@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -96,45 +96,101 @@ fn get_bool(value:&str)->Option<bool>{
 	}
 }
 fn get_minimal_type(name:&str,values:&[&str])->EntityPropertyType{
-	if !matches!(name,"spawnflags"|"ammo")&&values.iter().all(|&v|get_bool(v).is_some()){
-		return EntityPropertyType::Bool;
+	let mut max_count=0;
+	if !matches!(name,"spawnflags"|"ammo"){
+		let count=values.iter().flat_map(|&v|get_bool(v)).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::Bool;
+		}
 	}
-	if !matches!(name,"spawnflags"|"ammo")&&values.iter().all(|&v|<u8 as EntityProp>::parse(v).is_ok()){
-		return EntityPropertyType::U8;
+	if !matches!(name,"spawnflags"|"ammo"){
+		let count=values.iter().flat_map(|&v|<u8 as EntityProp>::parse(v)).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::U8;
+		}
 	}
 	// if values.iter().all(|&v|<i8 as EntityProp>::parse(v).is_ok()){
+	// 	let count=values.iter().flat_map(|&v|<u8 as EntityProp>::parse(v)).count();
+	// 	max_count=max_count.max(count);
+	// 	if count==values.len(){
+	// 		return EntityPropertyType::U8;
+	// 	}
 	// 	return EntityPropertyType::I8;
 	// }
-	if name!="spawnflags"&&values.iter().all(|&v|<u16 as EntityProp>::parse(v).is_ok()){
-		return EntityPropertyType::U16;
+	if name!="spawnflags"{
+		let count=values.iter().flat_map(|&v|<u16 as EntityProp>::parse(v)).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::U16;
+		}
 	}
 	// if values.iter().all(|&v|<i16 as EntityProp>::parse(v).is_ok()){
+	// 	let count=values.iter().flat_map(|&v|<u8 as EntityProp>::parse(v)).count();
+	// 	max_count=max_count.max(count);
+	// 	if count==values.len(){
+	// 		return EntityPropertyType::U8;
+	// 	}
 	// 	return EntityPropertyType::I16;
 	// }
-	if values.iter().all(|&v|<u32 as EntityProp>::parse(v).is_ok()){
-		return EntityPropertyType::U32;
+	{
+		let count=values.iter().flat_map(|&v|<u32 as EntityProp>::parse(v)).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::U32;
+		}
 	}
-	if values.iter().all(|&v|<i32 as EntityProp>::parse(v).is_ok()){
-		return EntityPropertyType::I32;
+	{
+		let count=values.iter().flat_map(|&v|<i32 as EntityProp>::parse(v)).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::I32;
+		}
 	}
-	if values.iter().all(|&v|<f32 as EntityProp>::parse(v).is_ok()){
-		return EntityPropertyType::F32;
+	{
+		let count=values.iter().flat_map(|&v|<f32 as EntityProp>::parse(v)).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::F32;
+		}
 	}
-	if (
+	if
 		name.find("color").is_some()
 		||name.find("light").is_some()
 		||name.find("ambient").is_some()
-	)&&values.iter().all(|&v|<Color as EntityProp>::parse(v).is_ok()){
-		return EntityPropertyType::Color;
+	{
+		let count=values.iter().flat_map(|&v|<Color as EntityProp>::parse(v)).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::Color;
+		}
 	}
-	if values.iter().all(|&v|<LightColor as EntityProp>::parse(v).is_ok()){
-		return EntityPropertyType::LightColor;
+	{
+		let count=values.iter().flat_map(|&v|<LightColor as EntityProp>::parse(v)).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::LightColor;
+		}
 	}
-	if name.find("angles").is_some()&&values.iter().all(|&v|<Angles as EntityProp>::parse(v).is_ok()){
-		return EntityPropertyType::Angles;
+	if name.find("angles").is_some(){
+		let count=values.iter().flat_map(|&v|<Angles as EntityProp>::parse(v)).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::Angles;
+		}
 	}
-	if values.iter().all(|&v|<Vector as EntityProp>::parse(v).is_ok()){
-		return EntityPropertyType::Vector;
+	{
+		let count=values.iter().flat_map(|&v|<Vector as EntityProp>::parse(v)).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::Vector;
+		}
+	}
+	if 1<values.len()&&values.len()/2<max_count{
+		// why are there outliers that fail to parse?
+		let unique_values:HashSet<_>=values.iter().copied().collect();
+		println!("name={name} over 50% parsed, inspect outliers: {:?}",unique_values);
 	}
 	EntityPropertyType::Str
 }
