@@ -90,8 +90,8 @@ impl EntityPropertyType{
 
 fn get_bool(value:&str)->Option<bool>{
 	match value{
-		"0"=>Some(false),
-		"1"=>Some(true),
+		"0"|"no"=>Some(false),
+		"1"|"yes"=>Some(true),
 		_=>None
 	}
 }
