@@ -25,8 +25,28 @@ fn read_bsp(path:PathBuf)->Result<vbsp::Bsp,ReadBspError>{
 	Ok(bsp)
 }
 
+pub enum Negated {
+    Yes,
+    No,
+    MatchingCriteria,
+}
+pub struct NegatedParseErr;
+impl std::str::FromStr for Negated {
+    type Err = NegatedParseErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "1" => Ok(Negated::Yes),
+            "0" => Ok(Negated::No),
+            "allow entities that match criteria" => Ok(Negated::MatchingCriteria),
+            _ => Err(NegatedParseErr),
+        }
+    }
+}
+
 enum EntityPropertyType{
 	Bool,
+	Negated,
 	U8,
 	// I8,
 	U16,
@@ -49,6 +69,7 @@ impl EntityPropertyType{
 				// no such thing as Option<bool>
 				syn::parse_quote!(bool)
 			),
+			EntityPropertyType::Negated=>(vec![],if optional{syn::parse_quote!(Option<Negated>)}else{syn::parse_quote!(Negated)}),
 			EntityPropertyType::U8=>(vec![],if optional{syn::parse_quote!(Option<u8>)}else{syn::parse_quote!(u8)}),
 			EntityPropertyType::U16=>(vec![],if optional{syn::parse_quote!(Option<u16>)}else{syn::parse_quote!(u16)}),
 			EntityPropertyType::U32=>(vec![],if optional{syn::parse_quote!(Option<u32>)}else{syn::parse_quote!(u32)}),
@@ -102,6 +123,13 @@ fn get_minimal_type(name:&str,values:&[&str])->EntityPropertyType{
 		max_count=max_count.max(count);
 		if count==values.len(){
 			return EntityPropertyType::Bool;
+		}
+	}
+	if !matches!(name,"spawnflags"|"ammo"){
+		let count=values.iter().flat_map(|&v|v.parse::<Negated>()).count();
+		max_count=max_count.max(count);
+		if count==values.len(){
+			return EntityPropertyType::Negated;
 		}
 	}
 	if !matches!(name,"spawnflags"|"ammo"){
