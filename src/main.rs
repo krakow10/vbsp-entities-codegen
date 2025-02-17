@@ -297,10 +297,10 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 	// print that sucker out
 	// save to codegen.rs
 	let mut file=std::fs::File::create("codegen.rs").map_err(BspEntitiesError::Io)?;
-	file.write(entities_enum.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
+	file.write_all(entities_enum.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
 
 	for entity_struct in entity_structs{
-		file.write(entity_struct.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
+		file.write_all(entity_struct.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
 	}
 
 	println!("convert elapsed={:?}",convert_elapsed);
