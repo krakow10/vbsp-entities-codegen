@@ -564,8 +564,8 @@ checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
 
 [[package]]
 name = "vbsp"
-version = "0.7.0-codegen3"
-source = "git+https://github.com/krakow10/vbsp?rev=a422226a385f6035fdb5d486461f3cc193f55044#a422226a385f6035fdb5d486461f3cc193f55044"
+version = "0.7.0-codegen4"
+source = "git+https://github.com/krakow10/vbsp?rev=e1ce4125b510b863db51fbf9e7941a6928c6c608#e1ce4125b510b863db51fbf9e7941a6928c6c608"
 dependencies = [
  "ahash",
  "arrayvec",
