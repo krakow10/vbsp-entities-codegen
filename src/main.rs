@@ -18,6 +18,15 @@ enum ReadBspError{
 	Io(std::io::Error),
 	Bsp(vbsp::BspError),
 }
+impl std::fmt::Display for ReadBspError{
+	fn fmt(&self,f:&mut std::fmt::Formatter<'_>)->std::fmt::Result{
+		match self{
+			ReadBspError::Io(error)=>write!(f,"Io: {}",error),
+			ReadBspError::Bsp(bsp_error)=>write!(f,"Bsp: {}",bsp_error),
+		}
+	}
+}
+impl std::error::Error for ReadBspError{}
 
 fn read_bsp(path:PathBuf)->Result<vbsp::Bsp,ReadBspError>{
 	let entire_file=std::fs::read(path).map_err(ReadBspError::Io)?;
@@ -248,7 +257,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		let mut join_thread=|thread:Thread|{
 			match thread.join(){
 				Ok((_,Ok(bsp)))=>Ok(bsps.push(bsp.entities)),
-				Ok((path,Err(e)))=>Ok(println!("File={:?} ReadBsp error: {:?}",path.file_stem(),e)),
+				Ok((path,Err(e)))=>Ok(println!("File={:?} ReadBsp error: {}",path.file_stem(),e)),
 				Err(e)=>Err(e),
 			}
 		};
