@@ -74,7 +74,7 @@ impl EntityPropertyType{
 	fn codegen(&self,name:&str,optional:bool)->syn::Field{
 		let (mut attrs,ty)=match self{
 			EntityPropertyType::Bool=>(
-				vec![syn::parse_quote!(#[serde(deserialize_with = "bool_from_int")])],
+				vec![syn::parse_quote!(#[serde(deserialize_with = "deserialize_bool")])],
 				// no such thing as Option<bool>
 				syn::parse_quote!(bool)
 			),
