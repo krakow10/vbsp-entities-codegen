@@ -395,6 +395,9 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 		file.write_all(entity_struct.into_token_stream().to_string().as_bytes()).map_err(BspEntitiesError::Io)?;
 	}
 
+	// TODO: add use statements to codegen
+	// TODO: use clap and provide target as cli flag
+
 	println!("convert elapsed={:?}",convert_elapsed);
 	println!("total elapsed={:?}",elapsed);
 	Ok(())
