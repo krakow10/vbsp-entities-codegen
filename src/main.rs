@@ -397,6 +397,7 @@ fn bsp_entities(paths:Vec<std::path::PathBuf>)->Result<(),BspEntitiesError>{
 
 	// TODO: add use statements to codegen
 	// TODO: use clap and provide target as cli flag
+	// TODO: use steamlocate to find tf2 maps
 
 	println!("convert elapsed={:?}",convert_elapsed);
 	println!("total elapsed={:?}",elapsed);
