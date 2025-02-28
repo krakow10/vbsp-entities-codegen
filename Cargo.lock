@@ -584,8 +584,8 @@ checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
 
 [[package]]
 name = "vbsp"
-version = "0.7.0"
-source = "git+https://github.com/krakow10/vbsp?rev=06ac1fdd29618db154a81fbc4ceb3cfe558d2671#06ac1fdd29618db154a81fbc4ceb3cfe558d2671"
+version = "0.7.0-pre2"
+source = "git+https://github.com/krakow10/vbsp?rev=c148db5a3e1756b8ef095750cba57f7884a266a1#c148db5a3e1756b8ef095750cba57f7884a266a1"
 dependencies = [
  "ahash",
  "arrayvec",
