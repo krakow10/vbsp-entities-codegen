@@ -537,8 +537,7 @@ fn bsp_entities(paths: Vec<std::path::PathBuf>) -> Result<(), BspEntitiesError> 
     // create complete file including use statements
     let mut complete_file: syn::File = syn::parse_quote! {
         use serde::Deserialize;
-        use vbsp::deserialize_bool;
-        use vbsp::{Angles, Color, LightColor, Negated, Vector};
+        use vbsp_common::{deserialize_bool, Angles, Color, LightColor, Negated, Vector};
 
     };
     complete_file.items.push(syn::Item::Enum(entities_enum));
