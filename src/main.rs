@@ -534,6 +534,18 @@ fn bsp_entities(paths: Vec<std::path::PathBuf>) -> Result<(), BspEntitiesError> 
     };
     entities_enum.variants.extend(entity_variants);
 
+    // create complete file including use statements
+    let mut complete_file: syn::File = syn::parse_quote! {
+        use serde::Deserialize;
+        use vbsp::deserialize_bool;
+        use vbsp::{Angles, Color, LightColor, Negated, Vector};
+
+    };
+    complete_file.items.push(syn::Item::Enum(entities_enum));
+    complete_file
+        .items
+        .extend(entity_structs.into_iter().map(syn::Item::Struct));
+
     // time!
     let convert_elapsed = start_convert.elapsed();
     let elapsed = start.elapsed();
@@ -541,15 +553,9 @@ fn bsp_entities(paths: Vec<std::path::PathBuf>) -> Result<(), BspEntitiesError> 
     // print that sucker out
     // save to codegen.rs
     let mut file = std::fs::File::create("codegen.rs").map_err(BspEntitiesError::Io)?;
-    file.write_all(entities_enum.into_token_stream().to_string().as_bytes())
+    file.write_all(complete_file.into_token_stream().to_string().as_bytes())
         .map_err(BspEntitiesError::Io)?;
 
-    for entity_struct in entity_structs {
-        file.write_all(entity_struct.into_token_stream().to_string().as_bytes())
-            .map_err(BspEntitiesError::Io)?;
-    }
-
-    // TODO: add use statements to codegen
     // TODO: use clap and provide target as cli flag
     // TODO: use steamlocate to find tf2 maps
 
