@@ -344,7 +344,8 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
         let unique_values: HashSet<_> = values.iter().copied().collect();
         println!("{name}: over 50% parsed, inspect outliers: {counts:?}\n{unique_values:?}",);
 
-        if values.len() as f32 * 0.99 < max_count as f32 {
+        // This requires at least 99 values to parse
+        if values.len() * 100 / 99 <= max_count {
             println!("over 99% parsed, accepting even with outliers");
             for (ty, count) in counts.into_iter() {
                 if count == max_count {
