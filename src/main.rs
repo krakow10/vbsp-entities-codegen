@@ -1,7 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use quote::ToTokens;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Write;
 use std::path::PathBuf;
-use quote::ToTokens;
 use vbsp::EntityProp;
 
 use vbsp::{Angles, Color, LightColor, Vector};
@@ -52,7 +52,7 @@ impl std::str::FromStr for Negated {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 enum EntityPropertyType {
     Bool,
     Negated,
@@ -204,7 +204,7 @@ fn get_bool(value: &str) -> Option<bool> {
 }
 fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
     let mut max_count = 0;
-    let mut counts = HashMap::new();
+    let mut counts = BTreeMap::new();
     if !matches!(name, "spawnflags" | "ammo") {
         let count = values.iter().flat_map(|&v| get_bool(v)).count();
         max_count = max_count.max(count);
@@ -342,13 +342,19 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
     if 1 < values.len() && values.len() / 2 < max_count {
         // why are there outliers that fail to parse?
         let unique_values: HashSet<_> = values.iter().copied().collect();
-        println!(
-            "{name}: over 50% parsed, inspect outliers: {counts:?}\n{unique_values:?}",
-        );
+        println!("{name}: over 50% parsed, inspect outliers: {counts:?}\n{unique_values:?}",);
+
+        if values.len() as f32 * 0.99 < max_count as f32 {
+            println!("over 99% parsed, accepting even with outliers");
+            for (ty, count) in counts.into_iter() {
+                if count == max_count {
+                    return ty;
+                }
+            }
+        }
     }
     EntityPropertyType::Str
 }
-
 
 struct ClassCollector<'a> {
     occurrences: usize,
