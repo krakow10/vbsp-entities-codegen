@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::PathBuf;
-
 use quote::ToTokens;
 use vbsp::EntityProp;
 
@@ -53,6 +52,7 @@ impl std::str::FromStr for Negated {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
 enum EntityPropertyType {
     Bool,
     Negated,
@@ -204,9 +204,11 @@ fn get_bool(value: &str) -> Option<bool> {
 }
 fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
     let mut max_count = 0;
+    let mut counts = HashMap::new();
     if !matches!(name, "spawnflags" | "ammo") {
         let count = values.iter().flat_map(|&v| get_bool(v)).count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::Bool, count);
         if count == values.len() {
             return EntityPropertyType::Bool;
         }
@@ -214,6 +216,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
     if !matches!(name, "spawnflags" | "ammo") {
         let count = values.iter().flat_map(|&v| v.parse::<Negated>()).count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::Negated, count);
         if count == values.len() {
             return EntityPropertyType::Negated;
         }
@@ -224,6 +227,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
             .flat_map(|&v| <u8 as EntityProp>::parse(v))
             .count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::U8, count);
         if count == values.len() {
             return EntityPropertyType::U8;
         }
@@ -242,6 +246,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
             .flat_map(|&v| <u16 as EntityProp>::parse(v))
             .count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::U16, count);
         if count == values.len() {
             return EntityPropertyType::U16;
         }
@@ -260,6 +265,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
             .flat_map(|&v| <u32 as EntityProp>::parse(v))
             .count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::U32, count);
         if count == values.len() {
             return EntityPropertyType::U32;
         }
@@ -270,6 +276,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
             .flat_map(|&v| <i32 as EntityProp>::parse(v))
             .count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::I32, count);
         if count == values.len() {
             return EntityPropertyType::I32;
         }
@@ -280,6 +287,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
             .flat_map(|&v| <f32 as EntityProp>::parse(v))
             .count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::F32, count);
         if count == values.len() {
             return EntityPropertyType::F32;
         }
@@ -293,6 +301,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
             .flat_map(|&v| <Color as EntityProp>::parse(v))
             .count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::Color, count);
         if count == values.len() {
             return EntityPropertyType::Color;
         }
@@ -303,6 +312,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
             .flat_map(|&v| <LightColor as EntityProp>::parse(v))
             .count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::LightColor, count);
         if count == values.len() {
             return EntityPropertyType::LightColor;
         }
@@ -313,6 +323,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
             .flat_map(|&v| <Angles as EntityProp>::parse(v))
             .count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::Angles, count);
         if count == values.len() {
             return EntityPropertyType::Angles;
         }
@@ -323,6 +334,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
             .flat_map(|&v| <Vector as EntityProp>::parse(v))
             .count();
         max_count = max_count.max(count);
+        counts.insert(EntityPropertyType::Vector, count);
         if count == values.len() {
             return EntityPropertyType::Vector;
         }
@@ -331,12 +343,12 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
         // why are there outliers that fail to parse?
         let unique_values: HashSet<_> = values.iter().copied().collect();
         println!(
-            "name={name} over 50% parsed, inspect outliers: {:?}",
-            unique_values
+            "{name}: over 50% parsed, inspect outliers: {counts:?}\n{unique_values:?}",
         );
     }
     EntityPropertyType::Str
 }
+
 
 struct ClassCollector<'a> {
     occurrences: usize,
