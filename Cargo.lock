@@ -584,24 +584,36 @@ checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
 
 [[package]]
 name = "vbsp"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0477993ec6cb6ba90c6c63914bf4fc57654ba707205c649d634d664bb7136a1"
+checksum = "81c85e45ea66731b6f70c91013ee6e42ce9b2349aa06eb6f43fa7b02c225b8d1"
 dependencies = [
  "ahash",
  "arrayvec",
  "binrw",
  "bitflags",
  "bv",
- "cgmath",
  "itertools",
  "lzma-rs",
  "num_enum",
  "serde",
  "static_assertions",
  "thiserror 2.0.11",
+ "vbsp-common",
  "vdf-reader",
  "zip-lzma",
+]
+
+[[package]]
+name = "vbsp-common"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5407a8696cc6de4e9464595c7eb0ee9967008c68b8c156dd465733be28bc16eb"
+dependencies = [
+ "binrw",
+ "cgmath",
+ "serde",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
