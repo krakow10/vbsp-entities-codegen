@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use vbsp::EntityProp;
 
-use vbsp::{Angles, Color, LightColor, Vector};
+use vbsp::{Angles, Color, LightColor, Negated, Vector};
 
 fn main() {
     let paths = std::env::args().skip(1).map(PathBuf::from).collect();
@@ -31,25 +31,6 @@ fn read_bsp(path: PathBuf) -> Result<vbsp::Bsp, ReadBspError> {
     let entire_file = std::fs::read(path).map_err(ReadBspError::Io)?;
     let bsp = vbsp::Bsp::read(&entire_file).map_err(ReadBspError::Bsp)?;
     Ok(bsp)
-}
-
-pub enum Negated {
-    Yes,
-    No,
-    MatchingCriteria,
-}
-pub struct NegatedParseErr;
-impl std::str::FromStr for Negated {
-    type Err = NegatedParseErr;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "1" => Ok(Negated::Yes),
-            "0" => Ok(Negated::No),
-            "allow entities that match criteria" => Ok(Negated::MatchingCriteria),
-            _ => Err(NegatedParseErr),
-        }
-    }
 }
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
