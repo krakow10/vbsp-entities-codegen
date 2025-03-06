@@ -1,3 +1,4 @@
+use clap::{Args, Parser, Subcommand};
 use quote::ToTokens;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
@@ -7,8 +8,29 @@ use vbsp::EntityProp;
 use vbsp::{Angles, Color, LightColor, Negated, Vector};
 
 fn main() {
-    let paths = std::env::args().skip(1).map(PathBuf::from).collect();
-    bsp_entities(paths).unwrap();
+    let cli = Cli::parse();
+    match cli.command {
+        Commands::Generate(command) => bsp_entities(command.input_files).unwrap(),
+    }
+}
+
+#[derive(Parser)]
+#[command(author,version,about,long_about=None)]
+#[command(propagate_version = true)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Generate(GenerateSubcommand),
+}
+
+/// Generate entity structs for a specified list of files.
+#[derive(Args)]
+struct GenerateSubcommand {
+    input_files: Vec<PathBuf>,
 }
 
 #[allow(dead_code)]
