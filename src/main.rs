@@ -46,8 +46,8 @@ enum EntityPropertyType {
     F32,
     Color,
     LightColor,
-    Vector,
     Angles,
+    Vector,
     Str,
 }
 
@@ -123,20 +123,20 @@ impl EntityPropertyType {
                     syn::parse_quote!(LightColor)
                 },
             ),
-            EntityPropertyType::Vector => (
-                vec![],
-                if optional {
-                    syn::parse_quote!(Option<Vector>)
-                } else {
-                    syn::parse_quote!(Vector)
-                },
-            ),
             EntityPropertyType::Angles => (
                 vec![],
                 if optional {
                     syn::parse_quote!(Option<Angles>)
                 } else {
                     syn::parse_quote!(Angles)
+                },
+            ),
+            EntityPropertyType::Vector => (
+                vec![],
+                if optional {
+                    syn::parse_quote!(Option<Vector>)
+                } else {
+                    syn::parse_quote!(Vector)
                 },
             ),
             EntityPropertyType::Str => (
