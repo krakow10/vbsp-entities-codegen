@@ -5,7 +5,7 @@ Entities Codegen
 
 ### Usage:
 ```
-vbsp-entities-codegen generate ctf_2fort.bsp ctf_sawmill.bsp
+vbsp-entities-codegen generate --output-file codegen.rs ctf_2fort.bsp ctf_sawmill.bsp
 ```
 
 #### License

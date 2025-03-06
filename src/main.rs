@@ -10,7 +10,9 @@ use vbsp::{Angles, Color, LightColor, Negated, Vector};
 fn main() {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Generate(command) => bsp_entities(command.input_files).unwrap(),
+        Commands::Generate(command) => {
+            bsp_entities(command.input_files, command.output_file).unwrap()
+        }
     }
 }
 
@@ -30,6 +32,8 @@ enum Commands {
 /// Generate entity structs for a specified list of files.
 #[derive(Args)]
 struct GenerateSubcommand {
+    #[arg(long, short)]
+    output_file: PathBuf,
     input_files: Vec<PathBuf>,
 }
 
@@ -374,7 +378,7 @@ enum BspEntitiesError {
     Io(std::io::Error),
 }
 
-fn bsp_entities(paths: Vec<std::path::PathBuf>) -> Result<(), BspEntitiesError> {
+fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesError> {
     let start = std::time::Instant::now();
 
     // decode bsps in parallel using available_parallelism
@@ -555,13 +559,11 @@ fn bsp_entities(paths: Vec<std::path::PathBuf>) -> Result<(), BspEntitiesError> 
     let convert_elapsed = start_convert.elapsed();
     let elapsed = start.elapsed();
 
-    // print that sucker out
-    // save to codegen.rs
-    let mut file = std::fs::File::create("codegen.rs").map_err(BspEntitiesError::Io)?;
+    // save to destination file
+    let mut file = std::fs::File::create(dest).map_err(BspEntitiesError::Io)?;
     file.write_all(complete_file.into_token_stream().to_string().as_bytes())
         .map_err(BspEntitiesError::Io)?;
 
-    // TODO: use clap and provide target as cli flag
     // TODO: use steamlocate to find tf2 maps
 
     println!("convert elapsed={:?}", convert_elapsed);
