@@ -300,7 +300,7 @@ fn get_minimal_type(name: &str, values: &[&str]) -> EntityPropertyType {
             return EntityPropertyType::LightColor;
         }
     }
-    if name.find("angles").is_some() {
+    if name.find("angles").is_some() || name.ends_with("dir") {
         let count = values
             .iter()
             .flat_map(|&v| <Angles as EntityProp>::parse(v))
