@@ -411,13 +411,15 @@ fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesErr
 
         bsps
     };
+
+    let decode_elapsed = start.elapsed();
     println!(
         "bsps decoded={} elapsed={:?}",
         bsps_entities.len(),
-        start.elapsed()
+        decode_elapsed
     );
 
-    let start_convert = std::time::Instant::now();
+    let start_generate = std::time::Instant::now();
 
     // collect observed class instances
     let mut classes = std::collections::HashMap::new();
@@ -558,8 +560,8 @@ fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesErr
         .extend(entity_structs.into_iter().map(syn::Item::Struct));
 
     // time!
-    let convert_elapsed = start_convert.elapsed();
-    let elapsed = start.elapsed();
+    let generate_elapsed = start_generate.elapsed();
+    let start_format = std::time::Instant::now();
 
     // make a string of the unformatted code
     let code = complete_file.into_token_stream().to_string();
@@ -581,15 +583,24 @@ fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesErr
         return Err(BspEntitiesError::FormatFailed);
     }
 
+    let format_elapsed = start_format.elapsed();
+    let start_output = std::time::Instant::now();
+
     // save to destination file
     let mut file = std::fs::File::create(dest).map_err(BspEntitiesError::Io)?;
     file.write_all(&output.stdout)
         .map_err(BspEntitiesError::Io)?;
 
+    let output_elapsed = start_output.elapsed();
+    let elapsed = start.elapsed();
+
     // TODO: use steamlocate to find tf2 maps
 
-    println!("convert elapsed={:?}", convert_elapsed);
-    println!("total elapsed={:?}", elapsed);
+    println!("decode elapsed={decode_elapsed:?}");
+    println!("generate elapsed={generate_elapsed:?}");
+    println!("format elapsed={format_elapsed:?}");
+    println!("output elapsed={output_elapsed:?}");
+    println!("total elapsed={elapsed:?}");
     Ok(())
 }
 
