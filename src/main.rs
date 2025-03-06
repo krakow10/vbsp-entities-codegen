@@ -3,6 +3,7 @@ use quote::ToTokens;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 use vbsp::EntityProp;
 
 use vbsp::{Angles, Color, LightColor, Negated, Vector};
@@ -376,6 +377,7 @@ struct ClassCollector<'a> {
 enum BspEntitiesError {
     ReadBsp(ReadBspError),
     Io(std::io::Error),
+    FormatFailed,
 }
 
 fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesError> {
@@ -559,9 +561,29 @@ fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesErr
     let convert_elapsed = start_convert.elapsed();
     let elapsed = start.elapsed();
 
+    // make a string of the unformatted code
+    let code = complete_file.into_token_stream().to_string();
+
+    // format via cli
+    let cmd = Command::new("rustfmt")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(BspEntitiesError::Io)?;
+    cmd.stdin
+        .as_ref()
+        .unwrap()
+        .write_all(code.as_bytes())
+        .map_err(BspEntitiesError::Io)?;
+    let output = cmd.wait_with_output().map_err(BspEntitiesError::Io)?;
+
+    if !output.status.success() {
+        return Err(BspEntitiesError::FormatFailed);
+    }
+
     // save to destination file
     let mut file = std::fs::File::create(dest).map_err(BspEntitiesError::Io)?;
-    file.write_all(complete_file.into_token_stream().to_string().as_bytes())
+    file.write_all(&output.stdout)
         .map_err(BspEntitiesError::Io)?;
 
     // TODO: use steamlocate to find tf2 maps
