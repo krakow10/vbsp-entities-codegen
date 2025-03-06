@@ -28,6 +28,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Generate(GenerateSubcommand),
+    // Config(ConfigSubcommand),
 }
 
 /// Generate entity structs for a specified list of files.
@@ -37,6 +38,12 @@ struct GenerateSubcommand {
     output_file: PathBuf,
     input_files: Vec<PathBuf>,
 }
+
+/// Generate entity structs using a configured preset.
+// #[derive(Args)]
+// struct ConfigSubcommand{
+// 	input_files:Vec<PathBuf>,
+// }
 
 #[allow(dead_code)]
 #[derive(Debug)]
