@@ -19,6 +19,7 @@ struct Args {
 enum ParseMode {
     Inherits,
     Types,
+    EntityClasses,
 }
 
 fn main() {
@@ -40,25 +41,13 @@ fn main() {
                         let (types, inherits) = parse_file(&code);
                         match args.mode {
                             ParseMode::Types => {
-                                for ty in types {
-                                    if !first {
-                                        write!(&mut stdout, ",\n").ok();
-                                    }
-                                    write!(&mut stdout, "\t").ok();
-                                    first = false;
-                                    serde_json::to_writer(&mut stdout, &ty).expect("Unable to write to stdout");
-
-                                }
+                                print_json_items(&mut stdout, types, &mut first);
                             }
                             ParseMode::Inherits => {
-                                for inherit in inherits {
-                                    if !first {
-                                        write!(&mut stdout, ",\n").ok();
-                                    }
-                                    write!(&mut stdout, "\t").ok();
-                                    first = false;
-                                    serde_json::to_writer(&mut stdout, &inherit).expect("Unable to write to stdout");
-                                }
+                                print_json_items(&mut stdout, inherits, &mut first);
+                            }
+                            ParseMode::EntityClasses => {
+                                todo!();
                             }
                         }
                     },
@@ -73,7 +62,18 @@ fn main() {
     println!("\n]");
 }
 
-fn parse_file<'code>(code: &'code str) -> (Vec<FoundType<'code>>, Vec<Inherit<'code>>) {
+fn print_json_items<T: Serialize, I: IntoIterator<Item = T>, W: Write>(mut out: W, items: I, first: &mut bool) {
+    for item in items {
+        if !*first {
+            writeln!(&mut out, ",").ok();
+        }
+        write!(&mut out, "\t").ok();
+        *first = false;
+        serde_json::to_writer(&mut out, &item).expect("Unable to write to stdout");
+    }
+}
+
+fn parse_file(code: &str) -> (Vec<FoundType>, Vec<Inherit>) {
     let mut parser = tree_sitter::Parser::new();
     let language = tree_sitter_cpp::LANGUAGE.into();
     parser
@@ -98,6 +98,10 @@ fn parse_file<'code>(code: &'code str) -> (Vec<FoundType<'code>>, Vec<Inherit<'c
                 }
             }
         }
+    }
+
+    for item in find_data_desc_fields(code) {
+        found_types.push(item)
     }
 
     let inherits = find_inherits(&language, tree.root_node(), code);
@@ -195,7 +199,7 @@ const CONVERT_FNS: &[(&str, &str)] = &[
 ];
 
 
-fn find_inherits<'tree, 'code>(language: &Language, root: Node<'tree>, code: &'code str) -> Vec<Inherit<'code>> {
+fn find_inherits<'code>(language: &Language, root: Node, code: &'code str) -> Vec<Inherit<'code>> {
     let query = Query::new(
         language,
         r#"(class_specifier
@@ -225,4 +229,50 @@ fn find_inherits<'tree, 'code>(language: &Language, root: Node<'tree>, code: &'c
 struct Inherit<'code> {
     name: &'code str,
     inherits: Vec<&'code str>,
+}
+
+fn find_data_desc_fields(code: &str) -> Vec<FoundType<>> {
+    let mut result = Vec::new();
+    for (start, _) in code.match_indices("BEGIN_DATADESC(") {
+        if let Some(end) = code[start..].find("END_DATADESC") {
+            let block = &code[start..start+end];
+            let class = block[block.find('(').unwrap()+1..block.find(')').unwrap()].trim();
+
+            for (field_start, _) in block.match_indices("DEFINE_KEYFIELD(") {
+                let body = &block[field_start+1..];
+                let end = body.find(')').unwrap();
+                let body = &body[..end];
+                let mut parts = body.split(',').map(str::trim).skip(1);
+                if let (Some(ty), Some(name)) = (parts.next(), parts.next()) {
+                    let name = name.trim_matches('"');
+                    if let Some(ty) = map_type(ty) {
+                        result.push(FoundType {
+                            class,
+                            name,
+                            ty
+                        });
+                    }
+                }
+            }
+        }
+    }
+    result
+}
+
+const TYPE_MAP: &[(&str, &str)] = &[
+    ("FIELD_FLOAT", "f32"),
+    ("FIELD_STRING", "string"),
+    ("FIELD_BOOLEAN", "bool"),
+    ("FIELD_INTEGER", "bool"),
+    ("FIELD_COLOR32", "color"),
+    ("FIELD_VECTOR", "vector"),
+];
+
+fn map_type(ty: &str) -> Option<&'static str> {
+    for (source_type, target_type) in TYPE_MAP {
+        if *source_type == ty {
+            return Some(target_type);
+        }
+    }
+    None
 }
