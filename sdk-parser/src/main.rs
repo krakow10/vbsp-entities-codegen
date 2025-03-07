@@ -38,7 +38,7 @@ fn main() {
             if path.extension() == Some(OsStr::new("h")) || path.extension() == Some(OsStr::new("cpp")) {
                 match read_to_string(path) {
                     Ok(code) => {
-                        let (types, inherits) = parse_file(&code);
+                        let (types, inherits, entity_classes) = parse_file(&code);
                         match args.mode {
                             ParseMode::Types => {
                                 print_json_items(&mut stdout, types, &mut first);
@@ -47,7 +47,7 @@ fn main() {
                                 print_json_items(&mut stdout, inherits, &mut first);
                             }
                             ParseMode::EntityClasses => {
-                                todo!();
+                                print_json_items(&mut stdout, entity_classes, &mut first);
                             }
                         }
                     },
@@ -73,7 +73,7 @@ fn print_json_items<T: Serialize, I: IntoIterator<Item = T>, W: Write>(mut out: 
     }
 }
 
-fn parse_file(code: &str) -> (Vec<FoundType>, Vec<Inherit>) {
+fn parse_file(code: &str) -> (Vec<FoundType>, Vec<Inherit>, Vec<EntityClass>) {
     let mut parser = tree_sitter::Parser::new();
     let language = tree_sitter_cpp::LANGUAGE.into();
     parser
@@ -105,8 +105,9 @@ fn parse_file(code: &str) -> (Vec<FoundType>, Vec<Inherit>) {
     }
 
     let inherits = find_inherits(&language, tree.root_node(), code);
+    let entity_classes = get_entity_classes(code);
 
-    (found_types, inherits)
+    (found_types, inherits, entity_classes)
 }
 
 #[derive(Debug, Serialize)]
@@ -275,4 +276,26 @@ fn map_type(ty: &str) -> Option<&'static str> {
         }
     }
     None
+}
+
+fn get_entity_classes(code: &str) -> Vec<EntityClass> {
+    let mut result = Vec::new();
+    for (start, _) in code.match_indices("LINK_ENTITY_TO_CLASS(") {
+        let end = code[start..].find(")").unwrap();
+        let block = code[start+"LINK_ENTITY_TO_CLASS(".len()..start+end].trim();
+        let mut parts = block.split(",").map(str::trim);
+        if let (Some(entity), Some(class)) = (parts.next(), parts.next()) {
+            result.push(EntityClass {
+                entity,
+                class,
+            });
+        }
+    }
+    result
+}
+
+#[derive(Serialize, Debug)]
+struct EntityClass<'code> {
+    entity: &'code str,
+    class: &'code str,
 }
