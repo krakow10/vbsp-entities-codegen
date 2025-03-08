@@ -1,3 +1,5 @@
+mod sdk_data;
+
 use clap::{Args, Parser, Subcommand};
 use quote::ToTokens;
 use std::collections::{HashMap, HashSet};
@@ -7,6 +9,7 @@ use std::process::{Command, Stdio};
 use vbsp::EntityProp;
 
 use vbsp::{Angles, Color, LightColor, Negated, Vector};
+use crate::sdk_data::SdkData;
 
 fn main() {
     let cli = Cli::parse();
@@ -60,7 +63,7 @@ fn read_bsp(path: PathBuf) -> Result<vbsp::Bsp, ReadBspError> {
     Ok(bsp)
 }
 
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
 enum EntityPropertyType {
     Bool,
     Negated,
@@ -80,6 +83,7 @@ enum EntityPropertyType {
 
 impl EntityPropertyType {
     const VARIANT_COUNT: usize = 12;
+
     fn codegen(&self, name: &str, optional: bool) -> syn::Field {
         let (mut attrs, ty) = match self {
             EntityPropertyType::Bool => (
@@ -381,6 +385,8 @@ enum BspEntitiesError {
 }
 
 fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesError> {
+    let sdk_data = SdkData::new();
+
     let start = std::time::Instant::now();
 
     // decode bsps in parallel using available_parallelism
@@ -457,16 +463,25 @@ fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesErr
     let mut entity_structs = Vec::new();
     let mut entity_variants = Vec::new();
     for (classname, properties) in classes {
+        let sdk_types = sdk_data.types_for_entity(classname);
+
         let mut has_lifetime = false;
         let mut props = Vec::new();
         for (propname, values) in properties.values {
-            // exhaustively make sure all observed values can be parsed by the chosen type
-            let ty = get_minimal_type(propname, &values);
+            // this is an optional type and should have a default value
+            let optional = values.len() < properties.occurrences;
+
+            let ty = if let Some(sdk_type) = sdk_types.get(&propname) {
+                *sdk_type
+            } else {
+                // exhaustively make sure all observed values can be parsed by the chosen type
+                let ty = get_minimal_type(propname, &values);
+                ty
+            };
             if matches!(ty, EntityPropertyType::Str) {
                 has_lifetime = true;
             }
-            // this is an optional type and should have a default value
-            let optional = values.len() < properties.occurrences;
+
             props.push(ty.codegen(propname, optional));
         }
         // sort props for consistency
