@@ -1,7 +1,7 @@
+use crate::EntityPropertyType;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::once;
-use crate::EntityPropertyType;
 
 #[derive(Deserialize, Debug)]
 struct EntityClass<'a> {

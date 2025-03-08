@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use vbsp::EntityProp;
 
-use vbsp::{Angles, Color, LightColor, Negated, Vector};
 use crate::sdk_data::SdkData;
+use vbsp::{Angles, Color, LightColor, Negated, Vector};
 
 fn main() {
     let cli = Cli::parse();
