@@ -476,7 +476,7 @@ impl EntityCollector {
         self.structs.sort_by(|a, b| a.ident.cmp(&b.ident));
         self.variants.sort_by(|a, b| a.ident.cmp(&b.ident));
     }
-    fn output(mut self) -> syn::File {
+    fn codegen(mut self) -> syn::File {
         // sort entities for consistency
         self.sort();
 
@@ -634,7 +634,7 @@ fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesErr
         entity_collector.push_entity(classname, props, has_lifetime);
     }
 
-    let complete_file = entity_collector.output();
+    let complete_file = entity_collector.codegen();
 
     // time!
     let generate_elapsed = start_generate.elapsed();
@@ -693,7 +693,7 @@ fn sdk_entities(dest: PathBuf) -> Result<(), SDKEntitiesError> {
         entity_collector.push_entity(classname, props, has_lifetime);
     }
 
-    let complete_file = entity_collector.output();
+    let complete_file = entity_collector.codegen();
 
     // time!
     let generate_elapsed = start_generate.elapsed();
