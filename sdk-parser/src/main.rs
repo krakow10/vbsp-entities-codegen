@@ -266,7 +266,7 @@ const TYPE_MAP: &[(&str, &str)] = &[
     ("FIELD_FLOAT", "f32"),
     ("FIELD_STRING", "string"),
     ("FIELD_BOOLEAN", "bool"),
-    ("FIELD_INTEGER", "bool"),
+    ("FIELD_INTEGER", "i32"),
     ("FIELD_COLOR32", "color"),
     ("FIELD_VECTOR", "vector"),
 ];
