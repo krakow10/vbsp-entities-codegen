@@ -77,6 +77,23 @@ impl<'a> SdkData<'a> {
             .map(|ty| (ty.name, map_sdk_type(ty.ty)))
             .collect()
     }
+
+    pub fn entities(&'a self) -> Vec<(&'a str, HashMap<&'a str, EntityPropertyType>)> {
+        self.classes
+            .iter()
+            .map(|entity_class| {
+                let entity = entity_class.entity;
+                let class = entity_class.class;
+                let inherits = self.inherits_for_class(class);
+                let properties = once(class)
+                    .chain(inherits.iter().copied())
+                    .flat_map(|class| self.types_for_class(class))
+                    .map(|ty| (ty.name, map_sdk_type(ty.ty)))
+                    .collect();
+                (entity, properties)
+            })
+            .collect()
+    }
 }
 
 fn map_sdk_type(ty: &str) -> EntityPropertyType {

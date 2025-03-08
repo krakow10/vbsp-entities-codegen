@@ -17,6 +17,7 @@ fn main() {
         Commands::Generate(command) => {
             bsp_entities(command.input_files, command.output_file).unwrap()
         }
+        Commands::SDK(command) => sdk_entities(command.output_file).unwrap(),
     }
 }
 
@@ -31,6 +32,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Generate(GenerateSubcommand),
+    SDK(SDKSubcommand),
 }
 
 /// Generate entity structs for a specified list of files.
@@ -39,6 +41,13 @@ struct GenerateSubcommand {
     #[arg(long, short)]
     output_file: PathBuf,
     input_files: Vec<PathBuf>,
+}
+
+/// Generate entity structs directly from the source SDK.
+#[derive(Args)]
+struct SDKSubcommand {
+    #[arg(long, short)]
+    output_file: PathBuf,
 }
 
 #[allow(dead_code)]
@@ -612,6 +621,162 @@ fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesErr
     // TODO: use steamlocate to find tf2 maps
 
     println!("decode elapsed={decode_elapsed:?}");
+    println!("generate elapsed={generate_elapsed:?}");
+    println!("format elapsed={format_elapsed:?}");
+    println!("output elapsed={output_elapsed:?}");
+    println!("total elapsed={elapsed:?}");
+    Ok(())
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+enum SDKEntitiesError {
+    Io(std::io::Error),
+    FormatFailed,
+}
+fn sdk_entities(dest: PathBuf) -> Result<(), SDKEntitiesError> {
+    let start = std::time::Instant::now();
+    let sdk_data = SdkData::new();
+    let decode_elapsed = start.elapsed();
+    let start_generate = std::time::Instant::now();
+    // generate a struct for each entity
+    let mut entity_structs = Vec::new();
+    let mut entity_variants = Vec::new();
+    for (classname, properties) in sdk_data.entities() {
+        let mut has_lifetime = false;
+        let mut props = Vec::new();
+        for (propname, ty) in properties {
+            if matches!(ty, EntityPropertyType::Str) {
+                has_lifetime = true;
+            }
+            props.push(ty.codegen(propname, false));
+        }
+        // sort props for consistency
+        props.sort_by(|a, b| a.ident.cmp(&b.ident));
+
+        // struct ident in UpperCamelCase
+        let ident = syn::Ident::new(
+            &heck::ToUpperCamelCase::to_upper_camel_case(classname),
+            proc_macro2::Span::call_site(),
+        );
+
+        // generate the class struct with all observed fields
+        entity_structs.push(syn::ItemStruct {
+            attrs: vec![syn::parse_quote!(#[derive(Debug, Clone, Deserialize)])],
+            vis: syn::Visibility::Public(syn::token::Pub::default()),
+            struct_token: syn::token::Struct::default(),
+            ident: ident.clone(),
+            generics: if has_lifetime {
+                syn::parse_quote!(<'a>)
+            } else {
+                syn::parse_quote!()
+            },
+            fields: syn::Fields::Named(syn::FieldsNamed {
+                brace_token: syn::token::Brace::default(),
+                named: props.into_iter().collect(),
+            }),
+            semi_token: None,
+        });
+
+        // generate Entities enum variant
+        let arguments = if has_lifetime {
+            syn::PathArguments::AngleBracketed(syn::parse_quote!(<'a>))
+        } else {
+            syn::PathArguments::None
+        };
+        let mut attrs = vec![syn::parse_quote!(#[serde(rename = #classname)])];
+        if has_lifetime {
+            attrs.push(syn::parse_quote!(#[serde(borrow)]));
+        }
+        entity_variants.push(syn::Variant {
+            attrs,
+            ident: ident.clone(),
+            fields: syn::Fields::Unnamed(syn::FieldsUnnamed {
+                paren_token: syn::token::Paren::default(),
+                unnamed: [syn::Field {
+                    attrs: vec![],
+                    vis: syn::Visibility::Inherited,
+                    mutability: syn::FieldMutability::None,
+                    ident: None,
+                    colon_token: None,
+                    ty: syn::Type::Path(syn::TypePath {
+                        qself: None,
+                        path: syn::Path {
+                            leading_colon: None,
+                            segments: [syn::PathSegment { ident, arguments }]
+                                .into_iter()
+                                .collect(),
+                        },
+                    }),
+                }]
+                .into_iter()
+                .collect(),
+            }),
+            discriminant: None,
+        });
+    }
+
+    // sort entities for consistency
+    entity_structs.sort_by(|a, b| a.ident.cmp(&b.ident));
+    entity_variants.sort_by(|a, b| a.ident.cmp(&b.ident));
+
+    // generate entities enum
+    let mut entities_enum: syn::ItemEnum = syn::parse_quote! {
+        #[derive(Debug, Clone, Deserialize)]
+        #[non_exhaustive]
+        #[serde(tag = "classname")]
+        pub enum Entity<'a> {
+        }
+    };
+    entities_enum.variants.extend(entity_variants);
+
+    // create complete file including use statements
+    let mut complete_file: syn::File = syn::parse_quote! {
+        use serde::Deserialize;
+        use vbsp_common::deserialize_bool;
+        use vbsp_common::{Angles, Color, LightColor, Negated, Vector};
+    };
+    complete_file.items.push(syn::Item::Enum(entities_enum));
+    complete_file
+        .items
+        .extend(entity_structs.into_iter().map(syn::Item::Struct));
+
+    // time!
+    let generate_elapsed = start_generate.elapsed();
+    let start_format = std::time::Instant::now();
+
+    // make a string of the unformatted code
+    let code = complete_file.into_token_stream().to_string();
+
+    // format via cli
+    let cmd = Command::new("rustfmt")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(SDKEntitiesError::Io)?;
+    cmd.stdin
+        .as_ref()
+        .unwrap()
+        .write_all(code.as_bytes())
+        .map_err(SDKEntitiesError::Io)?;
+    let output = cmd.wait_with_output().map_err(SDKEntitiesError::Io)?;
+
+    if !output.status.success() {
+        return Err(SDKEntitiesError::FormatFailed);
+    }
+
+    let format_elapsed = start_format.elapsed();
+    let start_output = std::time::Instant::now();
+
+    // save to destination file
+    let mut file = std::fs::File::create(dest).map_err(SDKEntitiesError::Io)?;
+    file.write_all(&output.stdout)
+        .map_err(SDKEntitiesError::Io)?;
+
+    let output_elapsed = start_output.elapsed();
+    let elapsed = start_generate.elapsed();
+
+    println!("json decode elapsed={decode_elapsed:?}");
     println!("generate elapsed={generate_elapsed:?}");
     println!("format elapsed={format_elapsed:?}");
     println!("output elapsed={output_elapsed:?}");
