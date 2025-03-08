@@ -94,7 +94,8 @@ fn parse_file(code: &str) -> (Vec<FoundType>, Vec<Inherit>, Vec<EntityClass>) {
                         class: f.name,
                         name: m.name.trim_matches('"'),
                         ty: target_type,
-                    })
+                    });
+                    break;
                 }
             }
         }
@@ -195,6 +196,7 @@ const CONVERT_FNS: &[(&str, &str)] = &[
     ("if (val)", "bool"),
     ("atoi", "i32"),
     ("UTIL_StringToColor32", "color"),
+    ("SetAbsAngles", "angles"),
     ("UTIL_StringToVector", "vector"),
     ("AllocPooledString", "string"),
 ];

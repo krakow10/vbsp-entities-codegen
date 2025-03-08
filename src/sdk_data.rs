@@ -87,6 +87,7 @@ fn map_sdk_type(ty: &str) -> EntityPropertyType {
         "f32" => EntityPropertyType::F32,
         "i32" => EntityPropertyType::I32,
         "bool" => EntityPropertyType::Bool,
+        "angles" => EntityPropertyType::Angles,
         _ => todo!(),
     }
 }
