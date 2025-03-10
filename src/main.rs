@@ -615,12 +615,10 @@ fn bsp_entities(paths: Vec<PathBuf>, dest: PathBuf) -> Result<(), BspEntitiesErr
             // this is an optional type and should have a default value
             let optional = values.len() < properties.occurrences;
 
-            let ty = if let Some(sdk_type) = sdk_types.get(&propname) {
-                *sdk_type
-            } else {
+            let ty = match sdk_types.get(&propname) {
+                Some(&sdk_type) => sdk_type,
                 // exhaustively make sure all observed values can be parsed by the chosen type
-                let ty = get_minimal_type(propname, &values);
-                ty
+                None => get_minimal_type(propname, &values),
             };
             if matches!(ty, EntityPropertyType::Str) {
                 has_lifetime = true;
